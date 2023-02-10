@@ -5,15 +5,17 @@ import pytz
 from django.db import transaction
 from django.utils import timezone
 from djmoney.money import Money
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets, serializers, status
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
-from api.serializers import InvoiceSerializer, SimpleInvoiceSerializer, BillingProjectSerializer, NotificationSerializer
+from api.serializers import InvoiceSerializer, SimpleInvoiceSerializer, BillingProjectSerializer, \
+    NotificationSerializer, BalanceSerializer, BalanceTransactionSerializer
 from core.component import component, labels
 from core.component.component import INVOICE_COMPONENT_MODEL
 from core.exception import PriceNotFound
-from core.models import Invoice, BillingProject, Notification
+from core.models import Invoice, BillingProject, Notification, Balance, InvoiceInstance
 from core.notification import send_notification_from_template
 from core.utils.dynamic_setting import get_dynamic_settings, get_dynamic_setting, set_dynamic_setting, BILLING_ENABLED, \
     INVOICE_TAX, COMPANY_NAME, COMPANY_ADDRESS
@@ -175,7 +177,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=True)
     def finish(self, request, pk):
         invoice = Invoice.objects.filter(id=pk).first()
+        balance = Balance.get_balance_for_project(invoice.project)
+        skip_balance = self.request.query_params.get('skip_balance', '')
+
         if invoice.state == Invoice.InvoiceState.UNPAID:
+            if not skip_balance:
+                deduct_transaction = f"Balance deduction for invoice #{invoice.id}"
+                balance.top_down(invoice.total, deduct_transaction)
             invoice.finish()
 
         send_notification_from_template(
@@ -196,7 +204,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=True)
     def rollback_to_unpaid(self, request, pk):
         invoice = Invoice.objects.filter(id=pk).first()
+        balance = Balance.get_balance_for_project(invoice.project)
+        skip_balance = self.request.query_params.get('skip_balance', '')
         if invoice.state == Invoice.InvoiceState.FINISHED:
+            if not skip_balance:
+                # Refund
+                refund_transaction = f"Refund for invoice #{invoice.id}"
+                balance.top_up(invoice.total, refund_transaction)
             invoice.rollback_to_unpaid()
 
         send_notification_from_template(
@@ -419,3 +433,48 @@ class NotificationViewSet(viewsets.ModelViewSet):
         serializer = NotificationSerializer(notification)
 
         return Response(serializer.data)
+
+
+# region Balance
+class BalanceViewSet(viewsets.ViewSet):
+    def list(self, request):
+        balances = []
+        for project in BillingProject.objects.all():
+            balances.append(Balance.get_balance_for_project(project=project))
+        return Response(BalanceSerializer(balances, many=True).data)
+
+    def retrieve(self, request, pk):
+        balance = Balance.objects.filter(pk).first()
+        return Response(BalanceSerializer(balance).data)
+
+    @action(detail=True, methods=['GET'])
+    def retrieve_by_project(self, request, pk):
+        project = get_object_or_404(BillingProject, tenant_id=pk)
+        balance = Balance.get_balance_for_project(project=project)
+        return Response(BalanceSerializer(balance).data)
+
+    @action(detail=True, methods=['GET'])
+    def transaction_by_project(self, request, pk):
+        project = get_object_or_404(BillingProject, tenant_id=pk)
+        transactions = Balance.get_balance_for_project(project=project).balancetransaction_set
+        return Response(BalanceTransactionSerializer(transactions, many=True).data)
+
+    @action(detail=True, methods=['POST'])
+    def top_up_by_project(self, request, pk):
+        project = get_object_or_404(BillingProject, tenant_id=pk)
+        balance = Balance.get_balance_for_project(project=project)
+        balance_transaction = balance.top_up(
+            Money(amount=request.data['amount'], currency=request.data['amount_currency']),
+            description=request.data['description'])
+        return Response(BalanceTransactionSerializer(balance_transaction).data)
+
+    @action(detail=True, methods=['POST'])
+    def top_down_by_project(self, request, pk):
+        project = get_object_or_404(BillingProject, tenant_id=pk)
+        balance = Balance.get_balance_for_project(project=project)
+        balance_transaction = balance.top_down(
+            Money(amount=request.data['amount'], currency=request.data['amount_currency']),
+            description=request.data['description'])
+        return Response(BalanceTransactionSerializer(balance_transaction).data)
+
+# end region

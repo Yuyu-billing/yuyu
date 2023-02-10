@@ -8,6 +8,8 @@ COMPANY_NAME = "company_name"
 COMPANY_LOGO = "company_logo"
 COMPANY_ADDRESS = "company_address"
 EMAIL_ADMIN = "email_admin"
+INVOICE_AUTO_DEDUCT_BALANCE = "invoice_auto_deduct_balance"
+HOW_TO_TOP_UP = "how_to_top_up"
 
 DEFAULTS = {
     BILLING_ENABLED: False,
@@ -16,6 +18,8 @@ DEFAULTS = {
     COMPANY_LOGO: '',
     COMPANY_ADDRESS: '',
     EMAIL_ADMIN: '',
+    INVOICE_AUTO_DEDUCT_BALANCE: True,
+    HOW_TO_TOP_UP: 'Please Contact Administrator'
 }
 
 

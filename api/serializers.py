@@ -3,7 +3,7 @@ from djmoney.settings import DECIMAL_PLACES
 from rest_framework import serializers
 
 from api import custom_validator
-from core.models import Invoice, BillingProject, Notification
+from core.models import Invoice, BillingProject, Notification, Balance, BalanceTransaction
 from core.component import component
 
 
@@ -75,3 +75,26 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'project', 'title', 'short_description', 'content', 'sent_status', 'is_read', 'created_at',
                   'recipient']
+
+
+class BalanceSerializer(serializers.ModelSerializer):
+    project = BillingProjectSerializer()
+    amount = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    amount_currency = serializers.CharField(source="amount.currency")
+
+    class Meta:
+        model = Balance
+        fields = ['id', 'project', 'amount', 'amount_currency']
+
+
+class BalanceTransactionSerializer(serializers.ModelSerializer):
+    amount = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    amount_currency = serializers.CharField(source="amount.currency")
+    action = serializers.CharField(required=False)
+    description = serializers.CharField()
+
+    class Meta:
+        model = BalanceTransaction
+        fields = ['id', 'amount', 'amount_currency', 'action', 'description', 'created_at']
+
+

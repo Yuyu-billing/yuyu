@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from core.models import FlavorPrice, VolumePrice, FloatingIpsPrice, BillingProject, Invoice, InvoiceVolume, \
     InvoiceFloatingIp, InvoiceInstance, DynamicSetting, InvoiceImage, ImagePrice, SnapshotPrice, RouterPrice, \
-    InvoiceSnapshot, InvoiceRouter, Notification
+    InvoiceSnapshot, InvoiceRouter, Notification, Balance, BalanceTransaction
 
 
 @admin.register(DynamicSetting)
@@ -83,3 +83,16 @@ class InvoiceImageAdmin(admin.ModelAdmin):
 @admin.register(Notification)
 class InvoiceImageAdmin(admin.ModelAdmin):
     list_display = ('project', 'title', 'short_description', 'sent_status')
+
+
+@admin.register(Balance)
+class BalanceAdmin(admin.ModelAdmin):
+    list_display = ('project', 'amount')
+
+@admin.register(BalanceTransaction)
+class BalanceTransactionAdmin(admin.ModelAdmin):
+    list_display = ('get_project', 'amount', 'action', 'description', 'created_at')
+
+    @admin.display(ordering='balance__project', description='Project')
+    def get_project(self, obj):
+        return obj.balance.project

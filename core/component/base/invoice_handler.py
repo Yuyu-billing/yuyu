@@ -92,7 +92,7 @@ class InvoiceHandler(metaclass=abc.ABCMeta):
                 project=None,
                 title=f'{settings.EMAIL_TAG} [Error] Price not found when rolling invoice',
                 short_description=f'Please check your Price configuration. Error on ID {getattr(instance, self.KEY_FIELD)}',
-                content=f'Please check your Price configuration fro {e.identifier}. Error on ID {getattr(instance, self.KEY_FIELD)} for '
+                content=f'Please check your Price configuration for {e.identifier}. Error on ID {getattr(instance, self.KEY_FIELD)} for '
                         f'invoice {getattr(instance, "invoice").id}',
             )
 

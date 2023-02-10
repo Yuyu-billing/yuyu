@@ -1,15 +1,15 @@
 import logging
 import traceback
-from typing import Mapping, Dict, Iterable
+from typing import Dict, Iterable
 
 from django.core.management import BaseCommand
 from django.utils import timezone
 
-from core.models import Invoice, InvoiceComponentMixin
 from core.component import component, labels
+from core.models import Invoice, InvoiceComponentMixin, Balance
 from core.notification import send_notification_from_template, send_notification
-from core.utils.dynamic_setting import get_dynamic_setting, BILLING_ENABLED, INVOICE_TAX, COMPANY_LOGO, COMPANY_NAME, \
-    COMPANY_ADDRESS
+from core.utils.dynamic_setting import get_dynamic_setting, BILLING_ENABLED, INVOICE_TAX, COMPANY_NAME, \
+    COMPANY_ADDRESS, INVOICE_AUTO_DEDUCT_BALANCE
 from yuyu import settings
 
 LOG = logging.getLogger("yuyu_new_invoice")
@@ -68,6 +68,28 @@ class Command(BaseCommand):
                     "invoice": new_invoice
                 }, fallback_price=True)
 
+        # Auto Finish Deduct Balance
+        if get_dynamic_setting(INVOICE_AUTO_DEDUCT_BALANCE):
+            balance = Balance.get_balance_for_project(active_invoice.project)
+
+            deduct_transaction = f"Automatic balance deduction for invoice #{active_invoice.id}"
+            if balance.top_down_if_amount_is_good(active_invoice.total, deduct_transaction):
+                # Auto finish invoice
+                active_invoice.finish()
+                send_notification_from_template(
+                    project=active_invoice.project,
+                    title=settings.EMAIL_TAG + f' Invoice #{active_invoice.id} has been Paid from Balance',
+                    short_description=f'Invoice is paid with total of {active_invoice.total}',
+                    template='invoice.html',
+                    context={
+                        'invoice': active_invoice,
+                        'company_name': get_dynamic_setting(COMPANY_NAME),
+                        'address': get_dynamic_setting(COMPANY_ADDRESS),
+                    }
+                )
+                return
+
+        # Not Auto Finish
         send_notification_from_template(
             project=active_invoice.project,
             title=settings.EMAIL_TAG + f' Your Invoice #{active_invoice.id} is Ready',
