@@ -4,7 +4,7 @@ import re
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.html import strip_tags
 from djmoney.models.fields import MoneyField
@@ -127,6 +127,7 @@ class Invoice(BaseModel, TimestampMixin):
         self.end_date = date
         self.tax = tax_percentage * self.subtotal / 100
         self.total = self.tax + self.subtotal
+        # TODO: Deduct balance
         self.save()
 
     def finish(self):
@@ -297,3 +298,59 @@ class Notification(BaseModel, TimestampMixin):
             LOG.exception('Error sending notification')
             self.sent_status = False
             self.save()
+
+
+# region balance
+class Balance(BaseModel, TimestampMixin):
+    project = models.ForeignKey('BillingProject', on_delete=models.CASCADE)
+    amount = MoneyField(max_digits=10, default=0)
+
+    @classmethod
+    def get_balance_for_project(cls, project):
+        balance, created = Balance.objects.get_or_create(project=project, defaults={
+            "project": project
+        })
+
+        return balance
+
+    @transaction.atomic
+    def top_up(self, amount, description):
+        balance_transaction = BalanceTransaction(balance=self, action=BalanceTransaction.ActionType.TOP_UP,
+                                                 amount=amount, description=description)
+        balance_transaction.save()
+
+        self.amount += amount
+        self.save()
+
+        return balance_transaction
+
+    @transaction.atomic
+    def top_down(self, amount, description):
+        balance_transaction = BalanceTransaction(balance=self, action=BalanceTransaction.ActionType.TOP_DOWN,
+                                                 amount=amount, description=description)
+        balance_transaction.save()
+
+        self.amount -= amount
+        self.save()
+
+        return balance_transaction
+
+    def top_down_if_amount_is_good(self, amount, description) -> bool:
+        if self.amount >= amount:
+            self.top_down(amount, description)
+            return True
+
+        return False
+
+
+class BalanceTransaction(BaseModel, TimestampMixin):
+    class ActionType(models.TextChoices):
+        TOP_UP = "top_up"
+        TOP_DOWN = "top_down"
+
+    balance = models.ForeignKey('Balance', on_delete=models.CASCADE, blank=True, null=True)
+    amount = MoneyField(max_digits=10)
+    action = models.CharField(choices=ActionType.choices, max_length=256)
+    description = models.CharField(max_length=256)
+
+# end region
