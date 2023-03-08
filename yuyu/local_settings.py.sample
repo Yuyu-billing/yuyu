@@ -16,3 +16,68 @@ EMAIL_HOST_USER = '<paste your gmail account here>'
 EMAIL_HOST_PASSWORD = '<paste Google password or app password here>'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+"""
+Unpaid Invoice Handler Configuration
+
+CLOUD_CONFIG_NAME : Is configuration in clouds.yaml that you want to use to connect to openstack.
+Example: Your clouds.yaml is
+clouds:
+  openstack:
+    auth:
+      auth_url: http://172.10.10.150:5000
+      username: "admin"
+      password: "your_password"
+      project_id: 0000000000000000000000000
+      project_name: "admin"
+      user_domain_name: "Default"
+    region_name: "ID"
+    interface: "public"
+    identity_api_version: 3
+
+You can put `openstack` as CLOUD_CONFIG_NAME
+
+UNPAID_INVOICE_HANDLER_CONFIG : Is configuration for an action that will be run on a particular day after invoice is issued and still unpaid
+The format is a list of dictionary that follow
+{
+   "day": 0, # The day of the action that will be run, example if you put 5 it will run in 5 day after invoice is issued and still unpaid
+   "action": "send_message/stop_instance/delete_instance", # The action that you want to run
+   "message_title": "Title", # The title or subject of the message if you use `send_message` action
+   "message_short_description": "Short Description", # The short description of message if you use `send_message` action
+   "message_content": "Title", # The content of the message if you use `send_message` action
+}
+"""
+
+#
+# CLOUD_CONFIG_NAME = "openstack"
+# UNPAID_INVOICE_HANDLER_CONFIG = [
+#     {
+#         "day": 5,
+#         "action": "send_message",
+#         "message_title": "Your invoice has been expired. Please pay now!",
+#         "message_short_description": "Your invoice has been expired. Please pay now!",
+#         "message_content": "Your invoice has been expired. Please pay now!",
+#     },
+#     {
+#         "day": 10,
+#         "action": "stop_instance",
+#     },
+#     {
+#         "day": 10,
+#         "action": "send_message",
+#         "message_title": "Your compute instance will be stopped",
+#         "message_short_description": "Your compute instance will be stopped",
+#         "message_content": "Your compute instance will be stopped because you have unpaid invoice",
+#     },
+#     {
+#         "day": 15,
+#         "action": "send_message",
+#         "message_title": "All of your instance has been deleted",
+#         "message_short_description": "All of your instance has been deleted",
+#         "message_content": "All of your instance has been deleted because you have unpaid invoice",
+#     },
+#     {
+#         "day": 15,
+#         "action": "delete_instance",
+#     },
+# ]
