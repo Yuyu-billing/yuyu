@@ -12,7 +12,7 @@ from django.core.management.base import BaseCommand
 
 from core.event_endpoint import EventEndpoint
 
-LOG = logging.getLogger("yuyu_notification")
+LOG = logging.getLogger("yuyu")
 
 
 class SignalExit(SystemExit):
