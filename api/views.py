@@ -4,6 +4,7 @@ import dateutil.parser
 from django.http import HttpResponse
 import prometheus_client
 import pytz
+import core.metric as metric
 from django.db import transaction
 from django.utils import timezone
 from djmoney.money import Money
@@ -23,22 +24,6 @@ from api.serializers import (
 from core.component import component, labels
 from core.component.component import INVOICE_COMPONENT_MODEL
 from core.exception import PriceNotFound
-from core.metric import (
-    FLOATINGIP_COST_METRIC,
-    FLOATINGIP_USAGE_METRIC,
-    IMAGE_COST_METRIC,
-    IMAGE_USAGE_METRIC,
-    INSTANCE_COST_METRIC,
-    INSTANCE_USAGE_METRIC,
-    ROUTER_COST_METRIC,
-    ROUTER_USAGE_METRIC,
-    SNAPSHOT_COST_METRIC,
-    SNAPSHOT_USAGE_METRIC,
-    TOTAL_COST_METRIC,
-    TOTAL_RESOURCE_METRIC,
-    VOLUME_COST_METRIC,
-    VOLUME_USAGE_METRIC,
-)
 from core.models import Invoice, BillingProject, Notification, Balance, InvoiceInstance
 from core.notification import send_notification_from_template
 from core.utils.dynamic_setting import (
@@ -86,65 +71,95 @@ def metrics(request):
         sum_of_price = sum_of_price or Money(
             amount=0, currency=settings.DEFAULT_CURRENCY
         )
-        TOTAL_COST_METRIC.labels(job="total_cost", resources=k).set(sum_of_price.amount)
-        TOTAL_RESOURCE_METRIC.labels(job="total_resource", resources=k).set(
+        metric.TOTAL_COST_METRIC.labels(job="total_cost", resources=k).set(
+            sum_of_price.amount
+        )
+        metric.TOTAL_RESOURCE_METRIC.labels(job="total_resource", resources=k).set(
             total_active_resource
         )
 
         # Details Cost
         if k == labels.LABEL_INSTANCES:
             for i in items:
-                INSTANCE_COST_METRIC.labels(
-                    job="instance_cost", flavor=i.flavor_id, name=i.name, invoice_state=i.invoice.state_str
+                metric.INSTANCE_COST_METRIC.labels(
+                    job="instance_cost",
+                    flavor=i.flavor_id,
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
                 ).set(i.price_charged.amount)
-                INSTANCE_USAGE_METRIC.labels(
-                    job="instance_usage", flavor=i.flavor_id, name=i.name, invoice_state=i.invoice.state_str
+                metric.INSTANCE_USAGE_METRIC.labels(
+                    job="instance_usage",
+                    flavor=i.flavor_id,
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
                 ).set(i.usage_time)
 
         if k == labels.LABEL_VOLUMES:
             for i in items:
-                VOLUME_COST_METRIC.labels(
-                    job="volume_cost", type=i.volume_type_id, name=i.volume_name, invoice_state=i.invoice.state_str
+                metric.VOLUME_COST_METRIC.labels(
+                    job="volume_cost",
+                    type=i.volume_type_id,
+                    name=i.volume_name,
+                    project_id=i.invoice.project.tenant_id,
                 ).set(i.price_charged.amount)
-                VOLUME_USAGE_METRIC.labels(
-                    job="volume_usage", type=i.volume_type_id, name=i.volume_name, invoice_state=i.invoice.state_str
+                metric.VOLUME_USAGE_METRIC.labels(
+                    job="volume_usage",
+                    type=i.volume_type_id,
+                    name=i.volume_name,
+                    project_id=i.invoice.project.tenant_id,
                 ).set(i.usage_time)
 
         if k == labels.LABEL_FLOATING_IPS:
             for i in items:
-                FLOATINGIP_COST_METRIC.labels(job="floatingip_cost", name=i.ip, invoice_state=i.invoice.state_str).set(
-                    i.price_charged.amount
-                )
-                FLOATINGIP_USAGE_METRIC.labels(job="floatingip_usage", name=i.ip, invoice_state=i.invoice.state_str).set(
-                    i.usage_time
-                )
+                metric.FLOATINGIP_COST_METRIC.labels(
+                    job="floatingip_cost",
+                    name=i.ip,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.price_charged.amount)
+                metric.FLOATINGIP_USAGE_METRIC.labels(
+                    job="floatingip_usage",
+                    name=i.ip,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.usage_time)
 
         if k == labels.LABEL_ROUTERS:
             for i in items:
-                ROUTER_COST_METRIC.labels(job="router_cost", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.price_charged.amount
-                )
-                ROUTER_USAGE_METRIC.labels(job="router_usage", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.usage_time
-                )
+                metric.ROUTER_COST_METRIC.labels(
+                    job="router_cost",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.price_charged.amount)
+                metric.ROUTER_USAGE_METRIC.labels(
+                    job="router_usage",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.usage_time)
 
         if k == labels.LABEL_SNAPSHOTS:
             for i in items:
-                SNAPSHOT_COST_METRIC.labels(job="snapshot_cost", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.price_charged.amount
-                )
-                SNAPSHOT_USAGE_METRIC.labels(job="snapshot_usage", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.usage_time
-                )
+                metric.SNAPSHOT_COST_METRIC.labels(
+                    job="snapshot_cost",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.price_charged.amount)
+                metric.SNAPSHOT_USAGE_METRIC.labels(
+                    job="snapshot_usage",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.usage_time)
 
         if k == labels.LABEL_IMAGES:
             for i in items:
-                IMAGE_COST_METRIC.labels(job="image_cost", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.price_charged.amount
-                )
-                IMAGE_USAGE_METRIC.labels(job="image_usage", name=i.name, invoice_state=i.invoice.state_str).set(
-                    i.usage_time
-                )
+                metric.IMAGE_COST_METRIC.labels(
+                    job="image_cost",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.price_charged.amount)
+                metric.IMAGE_USAGE_METRIC.labels(
+                    job="image_usage",
+                    name=i.name,
+                    project_id=i.invoice.project.tenant_id,
+                ).set(i.usage_time)
 
     metrics_page = prometheus_client.generate_latest()
     return HttpResponse(
