@@ -5,6 +5,7 @@ from oslo_messaging import NotificationResult
 
 from core.component import component
 from core.component.project.event_handler import ProjectEventHandler
+from core.feature.unpaid_invoice_handle.event_handler import UnpaidInvoiceEventHandler
 from core.notification import send_notification
 from core.utils.dynamic_setting import get_dynamic_settings, BILLING_ENABLED, get_dynamic_setting
 from yuyu import settings
@@ -20,6 +21,7 @@ class EventEndpoint(object):
 
         # Add handler for project event
         self.event_handler.append(ProjectEventHandler())
+        self.event_handler.append(UnpaidInvoiceEventHandler())
 
     def info(self, ctxt, publisher_id, event_type, payload, metadata):
         LOG.info("=== Event Received ===")
