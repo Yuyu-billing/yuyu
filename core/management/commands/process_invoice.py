@@ -12,16 +12,17 @@ from core.utils.dynamic_setting import get_dynamic_setting, BILLING_ENABLED, INV
     COMPANY_ADDRESS, INVOICE_AUTO_DEDUCT_BALANCE
 from yuyu import settings
 
-LOG = logging.getLogger("yuyu_new_invoice")
+LOG = logging.getLogger("yuyu")
 
 
 class Command(BaseCommand):
     help = 'Yuyu New Invoice'
 
     def handle(self, *args, **options):
-        print("Processing Invoice")
+        LOG.info("Processing Invoice")
         try:
             if not get_dynamic_setting(BILLING_ENABLED):
+                LOG.info("Billing not activated")
                 return
 
             self.close_date = timezone.now()
@@ -31,13 +32,15 @@ class Command(BaseCommand):
             for active_invoice in active_invoices:
                 self.close_active_invoice(active_invoice)
         except Exception:
+            LOG.exception("Error Processing Invoice")
             send_notification(
                 project=None,
                 title='[Error] Error when processing Invoice',
                 short_description=f'There is an error when Processing Invoice',
                 content=f'There is an error when handling Processing Invoice \n {traceback.format_exc()}',
             )
-        print("Processing Done")
+        
+        LOG.info("Processing Invoice Done")
 
     def close_active_invoice(self, active_invoice: Invoice):
         active_components_map: Dict[str, Iterable[InvoiceComponentMixin]] = {}

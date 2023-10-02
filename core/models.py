@@ -18,7 +18,7 @@ from core.utils.model_utils import BaseModel, TimestampMixin, PriceMixin, Invoic
 LOG = logging.getLogger("yuyu")
 
 
-# region Dynamic Setting
+#region Dynamic Setting
 class DynamicSetting(BaseModel):
     class DataType(models.IntegerChoices):
         BOOLEAN = 1
@@ -31,9 +31,9 @@ class DynamicSetting(BaseModel):
     type = models.IntegerField(choices=DataType.choices)
 
 
-# end region
+#endregion
 
-# region Pricing
+#region Pricing
 class FlavorPrice(BaseModel, TimestampMixin, PriceMixin):
     flavor_id = models.CharField(max_length=256, unique=True, blank=False)
 
@@ -62,9 +62,9 @@ class ImagePrice(BaseModel, TimestampMixin, PriceMixin):
     pass
 
 
-# end region
+#endregion
 
-# region Invoicing
+#region Invoicing
 class BillingProject(BaseModel, TimestampMixin):
     tenant_id = models.CharField(max_length=256)
     email_notification = models.CharField(max_length=512, blank=True, null=True)
@@ -84,8 +84,8 @@ class Invoice(BaseModel, TimestampMixin):
     end_date = models.DateTimeField(default=None, blank=True, null=True)
     finish_date = models.DateTimeField(default=None, blank=True, null=True)
     state = models.IntegerField(choices=InvoiceState.choices)
-    tax = MoneyField(max_digits=10, default=None, blank=True, null=True)
-    total = MoneyField(max_digits=10, default=None, blank=True, null=True)
+    tax = MoneyField(max_digits=256, default=None, blank=True, null=True)
+    total = MoneyField(max_digits=256, default=None, blank=True, null=True)
 
     @property
     def subtotal(self):
@@ -172,9 +172,9 @@ class Invoice(BaseModel, TimestampMixin):
         return sum(map(lambda x: x.price_charged, relation_all_row))
 
 
-# end region
+#endregion
 
-# region Invoice Component
+#region Invoice Component
 class InvoiceInstance(BaseModel, InvoiceComponentMixin):
     invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name=labels.LABEL_INSTANCES)
     # Key
@@ -257,7 +257,7 @@ class InvoiceImage(BaseModel, InvoiceComponentMixin):
         return price_without_allocation * math.ceil(self.space_allocation_gb)
 
 
-# end region
+#endregion
 
 class Notification(BaseModel, TimestampMixin):
     project = models.ForeignKey('BillingProject', on_delete=models.CASCADE, blank=True, null=True)
@@ -300,10 +300,10 @@ class Notification(BaseModel, TimestampMixin):
             self.save()
 
 
-# region balance
+#region balance
 class Balance(BaseModel, TimestampMixin):
     project = models.ForeignKey('BillingProject', on_delete=models.CASCADE)
-    amount = MoneyField(max_digits=10, default=0)
+    amount = MoneyField(max_digits=256, default=0)
 
     @classmethod
     def get_balance_for_project(cls, project):
@@ -349,8 +349,8 @@ class BalanceTransaction(BaseModel, TimestampMixin):
         TOP_DOWN = "top_down"
 
     balance = models.ForeignKey('Balance', on_delete=models.CASCADE, blank=True, null=True)
-    amount = MoneyField(max_digits=10)
+    amount = MoneyField(max_digits=256)
     action = models.CharField(choices=ActionType.choices, max_length=256)
     description = models.CharField(max_length=256)
 
-# end region
+#endregion
