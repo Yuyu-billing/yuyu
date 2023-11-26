@@ -9,7 +9,7 @@ from core.component import component
 
 class InvoiceComponentSerializer(serializers.ModelSerializer):
     adjusted_end_date = serializers.DateTimeField()
-    price_charged = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    price_charged = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     price_charged_currency = serializers.CharField(source="price_charged.currency")
 
 
@@ -31,9 +31,9 @@ def generate_invoice_component_serializer(model):
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    subtotal = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    subtotal = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     subtotal_currency = serializers.CharField(source="subtotal.currency")
-    total = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    total = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     total_currency = serializers.CharField(source="total.currency", required=False)
 
     def __init__(self, *args, **kwargs):
@@ -47,9 +47,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class SimpleInvoiceSerializer(serializers.ModelSerializer):
-    subtotal = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    subtotal = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     subtotal_currency = serializers.CharField(source="subtotal.currency")
-    total = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    total = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     total_currency = serializers.CharField(source="total.currency", required=False)
 
     class Meta:
@@ -79,7 +79,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class BalanceSerializer(serializers.ModelSerializer):
     project = BillingProjectSerializer()
-    amount = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    amount = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     amount_currency = serializers.CharField(source="amount.currency")
 
     class Meta:
@@ -88,7 +88,7 @@ class BalanceSerializer(serializers.ModelSerializer):
 
 
 class BalanceTransactionSerializer(serializers.ModelSerializer):
-    amount = MoneyField(max_digits=10, decimal_places=DECIMAL_PLACES)
+    amount = MoneyField(max_digits=256, decimal_places=DECIMAL_PLACES)
     amount_currency = serializers.CharField(source="amount.currency")
     action = serializers.CharField(required=False)
     description = serializers.CharField()

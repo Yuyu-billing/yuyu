@@ -3,6 +3,7 @@ import math
 from django.db import models
 from django.utils import timezone
 from djmoney.models.fields import MoneyField
+from django.utils.timesince import timesince
 
 
 class BaseModel(models.Model):
@@ -19,8 +20,8 @@ class TimestampMixin(models.Model):
 
 
 class PriceMixin(models.Model):
-    hourly_price = MoneyField(max_digits=10)
-    monthly_price = MoneyField(max_digits=10, default=None, blank=True, null=True)
+    hourly_price = MoneyField(max_digits=256)
+    monthly_price = MoneyField(max_digits=256, default=None, blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -69,6 +70,11 @@ class InvoiceComponentMixin(TimestampMixin, PriceMixin):
         hour_passes = math.ceil(seconds_passes / 3600)
 
         return self.hourly_price * hour_passes
+
+    @property
+    def usage_time(self):
+        usage = self.adjusted_end_date - self.start_date
+        return usage.seconds
 
     def is_closed(self):
         """

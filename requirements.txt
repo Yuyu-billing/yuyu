@@ -9,3 +9,4 @@ djangorestframework==3.12.4
 django-filter==2.4.0
 Markdown==3.3.4
 gunicorn==20.1.0
+prometheus-client==0.16.0
