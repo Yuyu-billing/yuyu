@@ -13,6 +13,7 @@ from djmoney.money import Money
 from core.component import labels
 from core.component.labels import LABEL_INSTANCES, LABEL_IMAGES, LABEL_SNAPSHOTS, LABEL_ROUTERS, LABEL_FLOATING_IPS, \
     LABEL_VOLUMES
+from core.utils.date_utils import DateTimeLocalField, current_localtime
 from core.utils.model_utils import BaseModel, TimestampMixin, PriceMixin, InvoiceComponentMixin
 
 LOG = logging.getLogger("yuyu")
@@ -80,9 +81,9 @@ class Invoice(BaseModel, TimestampMixin):
         FINISHED = 100
 
     project = models.ForeignKey('BillingProject', on_delete=models.CASCADE)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField(default=None, blank=True, null=True)
-    finish_date = models.DateTimeField(default=None, blank=True, null=True)
+    start_date = DateTimeLocalField()
+    end_date = DateTimeLocalField(default=None, blank=True, null=True)
+    finish_date = DateTimeLocalField(default=None, blank=True, null=True)
     state = models.IntegerField(choices=InvoiceState.choices)
     tax = MoneyField(max_digits=256, default=None, blank=True, null=True)
     total = MoneyField(max_digits=256, default=None, blank=True, null=True)
@@ -127,12 +128,11 @@ class Invoice(BaseModel, TimestampMixin):
         self.end_date = date
         self.tax = tax_percentage * self.subtotal / 100
         self.total = self.tax + self.subtotal
-        # TODO: Deduct balance
         self.save()
 
     def finish(self):
         self.state = Invoice.InvoiceState.FINISHED
-        self.finish_date = timezone.now()
+        self.finish_date = current_localtime()
         self.save()
 
     def rollback_to_unpaid(self):

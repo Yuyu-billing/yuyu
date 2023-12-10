@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from core.models import Invoice, BillingProject
 from core.component.base.invoice_handler import InvoiceHandler
+from core.utils.date_utils import current_localtime
 
 
 class EventHandler(metaclass=abc.ABCMeta):
@@ -22,7 +23,7 @@ class EventHandler(metaclass=abc.ABCMeta):
         invoice = Invoice.objects.filter(project__tenant_id=tenant_id, state=Invoice.InvoiceState.IN_PROGRESS).first()
         if not invoice:
             project = BillingProject.objects.get_or_create(tenant_id=tenant_id)
-            date_today = timezone.now()
+            date_today = current_localtime()
             month_first_day = date_today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             invoice = Invoice.objects.create(
                 project=project,
@@ -68,7 +69,7 @@ class EventHandler(metaclass=abc.ABCMeta):
         instance = self.invoice_handler.get_active_instance(invoice, payload)
         if not instance:
             payload['invoice'] = invoice
-            payload['start_date'] = timezone.now()
+            payload['start_date'] = current_localtime()
 
             self.invoice_handler.create(payload, fallback_price=True)
 
@@ -113,7 +114,7 @@ class EventHandler(metaclass=abc.ABCMeta):
 
         if instance:
             if self.invoice_handler.is_price_dependency_changed(instance, payload):
-                self.invoice_handler.roll(instance, close_date=timezone.now(), update_payload=payload, fallback_price=True)
+                self.invoice_handler.roll(instance, close_date=current_localtime(), update_payload=payload, fallback_price=True)
                 return True
 
             if self.invoice_handler.is_informative_changed(instance, payload):

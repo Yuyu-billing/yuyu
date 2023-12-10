@@ -3,6 +3,8 @@ import logging
 from core.models import BillingProject, Invoice
 from django.utils import timezone
 
+from core.utils.date_utils import current_localtime
+
 LOG = logging.getLogger("yuyu_notification")
 
 
@@ -18,7 +20,7 @@ class ProjectEventHandler:
             self.init_first_invoice(project)
 
     def init_first_invoice(self, project):
-        date_today = timezone.now()
+        date_today = current_localtime()
         month_first_day = date_today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         Invoice.objects.create(
             project=project,

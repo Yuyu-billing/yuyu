@@ -180,22 +180,15 @@ systemctl start yuyu_event_monitor
 
 ## Cron Installation
 
-There is a cronjob that needed to be run every month on 00:01 AM. This cronjob will finish all in progress invoice and
-start new invoice for the next month.
+There is a cronjob that needed to be run every day and every month. The cronjob is used to process the invoice and handling updaid invoice.
 
-To install it, you can use `crontab -e`.
+To install the cronjob, you need to execute this command
 
-Put this expression on the crontab
-
-```
-1 0 1 * * $yuyu_dir/bin/process_invoice.sh 
+```bash
+./bin/setup_cron.sh
 ```
 
-Replace $yuyu_dir with the directory of where yuyu is located. Example
-
-```
-1 0 1 * * /var/yuyu/bin/process_invoice.sh
-```
+You can make sure the cron is installed by checking `crontab -e`.
 
 # Updating Yuyu
 
@@ -276,7 +269,7 @@ Available action for unpaid invoice handling consist of:
     - /etc/openstack
 4. Setup the configuration in `local_settings.py`. See **Configuration** for detail.
 
-   Example config can follow
+   Example config can follow, you can put any number of config or remove it completely to disable it.
    ```python
    CLOUD_CONFIG_NAME = "openstack"
    UNPAID_INVOICE_HANDLER_CONFIG = [
@@ -311,20 +304,16 @@ Available action for unpaid invoice handling consist of:
        },
    ]
    ```
-5. Setup `cronjob` to run the action every day at 1 AM or change it your preferred time to run
+5. Setup `cronjob` to run the action every day
+   
+   To install it, you need to execute this command
 
-   To install it, you can use `crontab -e`.
-
-   Put this expression on the crontab
-
-   ```
-   0 1 * * * $yuyu_dir/bin/handle_unpaid_invoice.sh 
+   ```bash
+   ./bin/setup_cron.sh
    ```
 
-   Replace $yuyu_dir with the directory of where yuyu is located. Example
-   ```
-   0 1 * * * /var/yuyu/bin/handle_unpaid_invoice.sh
-   ```
+   You can make sure the cron is installed by checking `crontab -e` and make sure `handle_unpaid_invoice.sh` is present
+
 6. Check the connection to openstack with
    ```
    ./bin/check_openstack_connection.sh

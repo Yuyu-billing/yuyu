@@ -5,6 +5,8 @@ from django.utils import timezone
 from djmoney.models.fields import MoneyField
 from django.utils.timesince import timesince
 
+from core.utils.date_utils import DateTimeLocalField, current_localtime
+
 
 class BaseModel(models.Model):
     class Meta:
@@ -31,13 +33,13 @@ class InvoiceComponentMixin(TimestampMixin, PriceMixin):
     """
     Storing start time for price calculation
     """
-    start_date = models.DateTimeField()
+    start_date = DateTimeLocalField()
 
     """
     Storing end time of the component, when component still active it will be None.
     It will be set when component is closed or rolled
     """
-    end_date = models.DateTimeField(default=None, blank=True, null=True)
+    end_date = DateTimeLocalField(default=None, blank=True, null=True)
 
     @property
     def adjusted_end_date(self):
@@ -46,7 +48,7 @@ class InvoiceComponentMixin(TimestampMixin, PriceMixin):
         Basically it just return current time if end_date is None
         end_date will be set when invoice is finished every end of the month or when invoice component is rolled
         """
-        current_date = timezone.now()
+        current_date = current_localtime()
         if self.end_date:
             end_date = self.end_date
         else:
@@ -84,7 +86,7 @@ class InvoiceComponentMixin(TimestampMixin, PriceMixin):
 
     def close(self, date):
         """
-        Close component the component
+        Close the component
         """
         self.end_date = date
         self.save()

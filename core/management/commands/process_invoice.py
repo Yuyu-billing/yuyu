@@ -8,6 +8,7 @@ from django.utils import timezone
 from core.component import component, labels
 from core.models import Invoice, InvoiceComponentMixin, Balance
 from core.notification import send_notification_from_template, send_notification
+from core.utils.date_utils import current_localtime
 from core.utils.dynamic_setting import get_dynamic_setting, BILLING_ENABLED, INVOICE_TAX, COMPANY_NAME, \
     COMPANY_ADDRESS, INVOICE_AUTO_DEDUCT_BALANCE
 from yuyu import settings
@@ -25,8 +26,11 @@ class Command(BaseCommand):
                 LOG.info("Billing not activated")
                 return
 
-            self.close_date = timezone.now()
+            self.close_date = current_localtime()
+            LOG.info(f"Close Date: {self.close_date}")
+            
             self.tax_pertentage = get_dynamic_setting(INVOICE_TAX)
+            LOG.info(f"Tax Percentage: {self.tax_pertentage}")
 
             active_invoices = Invoice.objects.filter(state=Invoice.InvoiceState.IN_PROGRESS).all()
             for active_invoice in active_invoices:

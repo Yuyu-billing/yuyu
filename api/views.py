@@ -26,6 +26,7 @@ from core.component.component import INVOICE_COMPONENT_MODEL
 from core.exception import PriceNotFound
 from core.models import Invoice, BillingProject, Notification, Balance, InvoiceInstance
 from core.notification import send_notification_from_template
+from core.utils.date_utils import current_localtime
 from core.utils.dynamic_setting import (
     get_dynamic_settings,
     get_dynamic_setting,
@@ -226,7 +227,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         ).all()
         for active_invoice in active_invoices:
             self._close_active_invoice(
-                active_invoice, timezone.now(), get_dynamic_setting(INVOICE_TAX)
+                active_invoice, current_localtime(), get_dynamic_setting(INVOICE_TAX)
             )
 
         return Response({"status": "success"})
@@ -249,10 +250,30 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         active_invoice.close(close_date, tax_percentage)
 
     @action(detail=False, methods=["POST"])
+    @transaction.atomic
     def reset_billing(self, request):
-        self.handle_reset_billing()
+        set_dynamic_setting(BILLING_ENABLED, False)
+
+        BillingProject.objects.all().delete()
+        for name, handler in component.INVOICE_HANDLER.items():
+            handler.delete()
+
+        for name, model in component.PRICE_MODEL.items():
+            model.objects.all().delete()
         return Response({"status": "success"})
 
+    @action(detail=False, methods=["POST"])
+    @transaction.atomic
+    def reset_transaction_data(self, request):
+        set_dynamic_setting(BILLING_ENABLED, False)
+
+        BillingProject.objects.all().delete()
+        for name, handler in component.INVOICE_HANDLER.items():
+            handler.delete()
+
+        return Response({"status": "success"})
+
+    
     @transaction.atomic
     def handle_init_billing(self, data):
         set_dynamic_setting(BILLING_ENABLED, True)
@@ -260,11 +281,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         projects = {}
         invoices = {}
 
-        date_today = timezone.now()
+        date_today = current_localtime()
         month_first_day = date_today.replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
-
+        
         for name, handler in component.INVOICE_HANDLER.items():
             payloads = data[name]
 
@@ -294,16 +315,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 del payload["tenant_id"]
                 handler.create(payload, fallback_price=True)
 
-    @transaction.atomic
-    def handle_reset_billing(self):
-        set_dynamic_setting(BILLING_ENABLED, False)
-
-        BillingProject.objects.all().delete()
-        for name, handler in component.INVOICE_HANDLER.items():
-            handler.delete()
-
-        for name, model in component.PRICE_MODEL.items():
-            model.objects.all().delete()
 
     @action(detail=True)
     def finish(self, request, pk):

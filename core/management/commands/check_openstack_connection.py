@@ -16,5 +16,5 @@ class Command(BaseCommand):
         print("Will try to list instance on the project that configured in `clouds.yaml`")
 
         conn = openstack.connect(cloud=settings.CLOUD_CONFIG_NAME)
-        for server in conn.compute.servers():
+        for server in conn.compute.servers(all_projects=True):
             print(server.name)
