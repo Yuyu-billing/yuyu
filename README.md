@@ -242,8 +242,11 @@ For example, you can send email to remind customer to pay the invoice or delete 
 Available action for unpaid invoice handling consist of:
 
 - send_message : Sending a message to a customer
-- stop_instance : Will stop, compute instance
+- pause_instance : Will pause compute instance
+- suspend_instance : Will suspend compute instance
+- stop_instance : Will stop compute instance
 - delete_instance : Will delete compute, image, router, snapshot or volume
+
 
 ### Enabling Unpaid Invoice Handling
 
