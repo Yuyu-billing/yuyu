@@ -7,6 +7,7 @@ from djmoney.money import Money
 from core.exception import PriceNotFound
 from core.models import InvoiceComponentMixin, PriceMixin
 from core.notification import send_notification
+from core.utils.date_utils import current_localtime
 
 
 class InvoiceHandler(metaclass=abc.ABCMeta):
@@ -130,7 +131,7 @@ class InvoiceHandler(metaclass=abc.ABCMeta):
         :return:
         """
         self.update(instance, payload, save=False)
-        instance.close(timezone.now())  # Close will also save the instance
+        instance.close(current_localtime())  # Close will also save the instance
 
     def is_informative_changed(self, instance, payload):
         """

@@ -1,3 +1,12 @@
+Next version
+--------------------------
+- Feature: Project balance
+- Feature: Prometeus metric export
+- Feature: Unpaid Invoice handling
+- Fix: Money maximum digit
+- Fix: Fix monthly price calculation that use UTC timezone
+- Add setup_cron.sh script to easily setup yuyu cronjob
+
 v1.0.1
 ---------------------------
 - Fix: Support decimal in price (database migration needed)
